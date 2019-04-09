@@ -1,4 +1,4 @@
-# shiny
+# shiny ![](https://badgen.net/badge/status/designing/orange)
 A tiny RPC framework based netty
 
 ## Principle
