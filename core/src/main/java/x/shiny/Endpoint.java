@@ -14,20 +14,13 @@
  * limitations under the License.
  */
 
-package x.shiny.channel;
-
-import io.netty.util.concurrent.Future;
-import x.shiny.Protocol;
-import x.shiny.Request;
-import x.shiny.Response;
+package x.shiny;
 
 /**
  * @author guohaoice@gmail.com
  */
-public interface InvocationContext {
-    Protocol protocol();
+public interface Endpoint {
+    String host();
 
-    Session session();
-
-    Future<Response> invoke(Request request);
+    int port();
 }

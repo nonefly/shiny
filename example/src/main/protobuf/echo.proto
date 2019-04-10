@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package x.shiny.example.proto;
+option java_package = "x.shiny.example.proto";
+option java_outer_classname = "Echo";
+option java_generic_services = true;
+option java_multiple_files = true;
+
+
+message EchoRequest {
+    string name = 1;
+}
+
+message EchoResponse {
+    string name = 1;
+}
+
+
+service EchoService {
+    rpc Echo (EchoRequest) returns (EchoResponse);
+}

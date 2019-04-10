@@ -19,6 +19,7 @@ package x.shiny.tcp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import com.google.protobuf.Service;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -33,7 +34,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import x.shiny.Protocol;
@@ -56,21 +56,21 @@ public class TCPServer {
 
     private final List<Protocol> protocols;
 
-    private final List<Object> services;
+    private final List<Service> services;
 
-    public TCPServer(List<Object> services) {
+    public TCPServer(List<Service> services) {
         this(NetElf.randomPort(), null, services);
     }
 
-    public TCPServer(int port) {
-        this(port, null, null);
+    public TCPServer(List<Protocol> protocols, List<Service> services) {
+        this(NetElf.randomPort(), protocols, services);
     }
 
-    public TCPServer(int port, List<Protocol> protocols) {
-        this(port, protocols, null);
+    public TCPServer(int port, List<Service> services) {
+        this(port, null, services);
     }
 
-    public TCPServer(int port, List<Protocol> protocols, List<Object> services) {
+    public TCPServer(int port, List<Protocol> protocols, List<Service> services) {
         this.bootstrap = new ServerBootstrap();
         this.bootstrap.localAddress(port);
         if (services != null) {

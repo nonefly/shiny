@@ -20,6 +20,7 @@ package x.shiny;
  * @author guohaoice@gmail.com
  */
 public interface Request {
+    String service();
 
     String method();
 

@@ -14,20 +14,25 @@
  * limitations under the License.
  */
 
-package x.shiny.channel;
+package x.shiny.common;
 
-import io.netty.util.concurrent.Future;
-import x.shiny.Protocol;
-import x.shiny.Request;
-import x.shiny.Response;
+import lombok.AllArgsConstructor;
+import x.shiny.Endpoint;
 
 /**
  * @author guohaoice@gmail.com
  */
-public interface InvocationContext {
-    Protocol protocol();
+@AllArgsConstructor
+public class DefaultEndpoint implements Endpoint {
+    private final String host;
+    private final int port;
+    @Override
+    public String host() {
+        return host;
+    }
 
-    Session session();
-
-    Future<Response> invoke(Request request);
+    @Override
+    public int port() {
+        return port;
+    }
 }

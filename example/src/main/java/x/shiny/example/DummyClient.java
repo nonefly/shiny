@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 
-package x.shiny.domain;
+package x.shiny.example;
 
-import x.shiny.Request;
+import x.shiny.Endpoint;
+import x.shiny.common.DefaultEndpoint;
+import x.shiny.tcp.TCPClient;
 
 /**
  * @author guohaoice@gmail.com
  */
-public interface Invocation extends Request{
+public class DummyClient {
+    public static void main(String[] args) {
+        Endpoint endpoint=new DefaultEndpoint("localhost",8888);
 
-    long startTime();
+        TCPClient client=new TCPClient(endpoint);
 
-    long requestId();
+        client.connect();
+    }
 }

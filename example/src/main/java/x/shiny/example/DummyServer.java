@@ -14,20 +14,19 @@
  * limitations under the License.
  */
 
-package x.shiny.channel;
+package x.shiny.example;
 
-import io.netty.util.concurrent.Future;
-import x.shiny.Protocol;
-import x.shiny.Request;
-import x.shiny.Response;
+import java.util.Collections;
+import java.util.List;
+import x.shiny.tcp.TCPServer;
 
 /**
  * @author guohaoice@gmail.com
  */
-public interface InvocationContext {
-    Protocol protocol();
-
-    Session session();
-
-    Future<Response> invoke(Request request);
+public class DummyServer {
+    public static void main(String[] args) {
+        List<Object> services = Collections.singletonList(new EchoServiceImpl());
+        TCPServer server = new TCPServer(8888, services);
+        server.start();
+    }
 }

@@ -22,6 +22,8 @@ package x.shiny;
 public interface Packet {
     boolean isRequest();
 
+    int id();
+
     Request request();
 
     Response response();

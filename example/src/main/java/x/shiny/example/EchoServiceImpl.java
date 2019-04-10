@@ -14,20 +14,23 @@
  * limitations under the License.
  */
 
-package x.shiny.channel;
+package x.shiny.example;
 
-import io.netty.util.concurrent.Future;
-import x.shiny.Protocol;
-import x.shiny.Request;
-import x.shiny.Response;
+import com.google.protobuf.RpcCallback;
+import com.google.protobuf.RpcController;
+import x.shiny.example.proto.EchoRequest;
+import x.shiny.example.proto.EchoResponse;
+import x.shiny.example.proto.EchoService;
 
 /**
  * @author guohaoice@gmail.com
  */
-public interface InvocationContext {
-    Protocol protocol();
-
-    Session session();
-
-    Future<Response> invoke(Request request);
+public class EchoServiceImpl extends EchoService {
+    @Override
+    public void echo(RpcController controller, EchoRequest request, RpcCallback<EchoResponse> done) {
+        EchoResponse response = EchoResponse.newBuilder()
+                .setName(request.getName())
+                .build();
+        done.run(response);
+    }
 }

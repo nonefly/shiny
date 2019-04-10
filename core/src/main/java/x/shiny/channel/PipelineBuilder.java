@@ -17,14 +17,19 @@
 package x.shiny.channel;
 
 import java.util.List;
+import com.google.protobuf.Service;
+import x.shiny.filter.ReflectionHandler;
 import x.shiny.filter.inbound.RemoteHandler;
+import x.shiny.filter.outbound.OutboundRemoteHandler;
 
 /**
  * @author guohaoice@gmail.com
  */
 public class PipelineBuilder {
-    public static InvocationPipeline buildRequestPipeline(List<Object> services) {
-        return null;
+    public static InvocationPipeline buildRequestPipeline(List<Service> services) {
+        ReflectionHandler handler = new ReflectionHandler(services);
+        InvocationPipeline current = new ShinyInvocationPipeline(null, handler);
+        current = new ShinyInvocationPipeline(current, new OutboundRemoteHandler());
     }
 
     public static InvocationPipeline buildResponsePipeline() {
