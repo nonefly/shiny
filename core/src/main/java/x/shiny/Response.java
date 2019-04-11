@@ -16,12 +16,14 @@
 
 package x.shiny;
 
+import com.google.protobuf.Message;
+
 /**
  * @author guohaoice@gmail.com
  */
 public interface Response {
 
-    Object bizResponse();
+    Message bizResponse();
 
     Throwable cause();
 

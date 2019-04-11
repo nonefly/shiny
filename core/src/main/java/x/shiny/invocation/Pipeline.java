@@ -14,18 +14,16 @@
  * limitations under the License.
  */
 
-package x.shiny.filter;
+package x.shiny.invocation;
 
 import io.netty.util.concurrent.Future;
 import x.shiny.Request;
 import x.shiny.Response;
-import x.shiny.channel.InvocationContext;
 
 /**
  * @author guohaoice@gmail.com
  */
-public interface Filter {
+public interface Pipeline {
 
-    Future<Response> invoke(InvocationContext context,Request request);
-
+    Future<Response> invoke(Request request);
 }

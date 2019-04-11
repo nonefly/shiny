@@ -16,17 +16,27 @@
 
 package x.shiny.channel;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import io.netty.channel.Channel;
-import lombok.AllArgsConstructor;
+import io.netty.util.concurrent.Promise;
 import x.shiny.Protocol;
+import x.shiny.Response;
 
 /**
  * @author guohaoice@gmail.com
  */
-@AllArgsConstructor
 public class ShinySession implements Session {
     private final Channel channel;
+    private final Map<Integer, Promise<Response>> ids = new HashMap<>();
     private volatile Protocol preferProtocol;
+    private AtomicInteger igGen = new AtomicInteger(0);
+
+    public ShinySession(Channel channel, Protocol preferProtocol) {
+        this.channel = channel;
+        this.preferProtocol = preferProtocol;
+    }
 
     @Override
     public Protocol preferredProtocol() {
@@ -41,5 +51,17 @@ public class ShinySession implements Session {
     @Override
     public Channel channel() {
         return channel;
+    }
+
+    @Override
+    public int id(Promise<Response> promise) {
+        int id = igGen.incrementAndGet();
+        ids.put(id, promise);
+        return id;
+    }
+
+    @Override
+    public Promise<Response> promise(int id) {
+        return ids.remove(id);
     }
 }

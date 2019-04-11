@@ -18,6 +18,7 @@ package x.shiny.example;
 
 import java.util.Collections;
 import java.util.List;
+import com.google.protobuf.Service;
 import x.shiny.tcp.TCPServer;
 
 /**
@@ -25,7 +26,7 @@ import x.shiny.tcp.TCPServer;
  */
 public class DummyServer {
     public static void main(String[] args) {
-        List<Object> services = Collections.singletonList(new EchoServiceImpl());
+        List<Service> services = Collections.singletonList(new EchoServiceImpl());
         TCPServer server = new TCPServer(8888, services);
         server.start();
     }

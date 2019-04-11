@@ -20,16 +20,18 @@ import java.util.List;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.CombinedChannelDuplexHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.Attribute;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import x.shiny.Packet;
 import x.shiny.Protocol;
 import x.shiny.channel.Session;
 import x.shiny.channel.ShinySession;
 import x.shiny.common.BadDataFormatException;
+import x.shiny.transport.RemoteInboundHandler;
 
 /**
  * Bi-direction is supported, so there is no different handlers between server and client.
@@ -37,15 +39,12 @@ import x.shiny.common.BadDataFormatException;
  * @author guohaoice@gmail.com
  */
 @Slf4j
+@AllArgsConstructor
 @ChannelHandler.Sharable
-public class MessageHandler extends CombinedChannelDuplexHandler {
+public class MessageHandler extends ChannelInboundHandlerAdapter {
     private final List<Protocol> protocols;
-    private final PacketProcessor packetProcessor;
+    private final RemoteInboundHandler handler;
 
-    public MessageHandler(List<Protocol> protocols, PacketProcessor packetProcessor) {
-        this.protocols = protocols;
-        this.packetProcessor = packetProcessor;
-    }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object event) {
@@ -67,7 +66,7 @@ public class MessageHandler extends CombinedChannelDuplexHandler {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf in = (ByteBuf) msg;
-        Packet decoded = null;
+        Packet packet = null;
 
         Attribute<Session> attr = ctx.channel().attr(Session.SESSION_ATTRIBUTE_KEY);
         Session session = attr.get();
@@ -77,21 +76,21 @@ public class MessageHandler extends CombinedChannelDuplexHandler {
         if (session != null) {
             protocol = session.preferredProtocol();
             prefer = protocol.id();
-            decoded = protocol.decode(in);
+            packet = protocol.pack(in);
         }
-        if (decoded == null) {
+        if (packet == null) {
             for (Protocol p : protocols) {
                 if (p.id() == prefer) {
                     continue;
                 }
-                decoded = p.decode(in);
-                if (decoded != null) {
+                packet = p.pack(in);
+                if (packet != null) {
                     protocol = p;
                     break;
                 }
             }
         }
-        if (protocol == null || decoded == null) {
+        if (protocol == null || packet == null) {
             throw new BadDataFormatException();
         }
         if (session == null) {
@@ -101,6 +100,6 @@ public class MessageHandler extends CombinedChannelDuplexHandler {
         if (session.preferredProtocol() != protocol) {
             session.setPreferredProtocol(protocol);
         }
-        packetProcessor.process(session, decoded);
+        handler.handle(session, packet);
     }
 }

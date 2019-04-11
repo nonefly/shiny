@@ -16,16 +16,18 @@
 
 package x.shiny;
 
+
+import com.google.protobuf.Message;
+
 /**
  * @author guohaoice@gmail.com
  */
 public interface Request {
+
     String service();
 
     String method();
 
-    Object[] args();
-
-    String[] argsTypes();
+    Message arg();
 
 }

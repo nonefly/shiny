@@ -16,6 +16,7 @@
 
 package x.shiny;
 
+import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 
 /**
@@ -26,8 +27,8 @@ public interface Protocol {
 
     int id();
 
-    Packet decode(ByteBuf buf);
+    Packet pack(ByteBuf buf);
 
-    ByteBuf encode(Packet packet);
+    ByteBuf unpack(Packet packet);
 
 }

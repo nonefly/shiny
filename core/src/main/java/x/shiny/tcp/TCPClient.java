@@ -16,18 +16,20 @@
 
 package x.shiny.tcp;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Future;
+import com.google.protobuf.Service;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.Getter;
@@ -35,11 +37,12 @@ import x.shiny.Endpoint;
 import x.shiny.Protocol;
 import x.shiny.Request;
 import x.shiny.Response;
-import x.shiny.channel.InvocationPipeline;
-import x.shiny.channel.PipelineBuilder;
 import x.shiny.handler.MessageHandler;
-import x.shiny.handler.PacketProcessor;
-import x.shiny.handler.ShinyPacketProcessor;
+import x.shiny.handler.PipelineBuilder;
+import x.shiny.invocation.Pipeline;
+import x.shiny.protocol.ShinyProtocol;
+import x.shiny.transport.RemoteInboundHandler;
+import x.shiny.transport.RemoteOutboundHandler;
 
 /**
  * @author guohaoice@gmail.com
@@ -57,49 +60,54 @@ public class TCPClient {
         }
     }
 
+    private final RemoteOutboundHandler handler = new RemoteOutboundHandler(this);
     @Getter
     private final Bootstrap bootstrap;
-    private final List<Protocol> protocols;
-    private final List<Object> services;
+    @Getter
+    private final Protocol protocol;
+    private final List<Service> services;
     private final Endpoint endpoint;
+    @Getter
     private Channel channel;
 
     public TCPClient(Endpoint endpoint) {
         this(endpoint, null, null);
     }
 
-    public TCPClient(Endpoint endpoint, List<Object> services) {
+    public TCPClient(Endpoint endpoint, List<Service> services) {
         this(endpoint, null, services);
     }
 
 
-    public TCPClient(Endpoint endpoint, List<Protocol> protocols, List<Object> services) {
+    public TCPClient(Endpoint endpoint, Protocol protocol, List<Service> services) {
         this.endpoint = endpoint;
-        this.protocols = protocols;
+        if (protocol == null) {
+            ShinyProtocol shinyProtocol = new ShinyProtocol();
+            shinyProtocol.setServiceList(services);
+            this.protocol = shinyProtocol;
+        } else {
+            this.protocol = protocol;
+        }
         this.services = services;
         this.bootstrap = new Bootstrap();
     }
 
     public Future<Response> invoke(Request request) {
-        channel.write(request);
-    }
-    public void invoke(String interfaceName, String methodName, Object[] args, String[] argsType) {
-
+        return handler.invoke(request);
     }
 
     public void connect() {
 
         if (Epoll.isAvailable()) {
             // WORKER thread may do some biz jobs , 50% ratio is rational.
-            bootstrap.channel(EpollServerSocketChannel.class);
+            bootstrap.channel(EpollSocketChannel.class);
         } else {
-            bootstrap.channel(NioServerSocketChannel.class);
+            bootstrap.channel(NioSocketChannel.class);
         }
 
-        InvocationPipeline requestPipeline = PipelineBuilder.buildRequestPipeline(services);
-        InvocationPipeline responsePipeline = PipelineBuilder.buildResponsePipeline();
-        PacketProcessor processor = new ShinyPacketProcessor(requestPipeline, responsePipeline);
-        final MessageHandler handler = new MessageHandler(protocols, processor);
+        Pipeline requestPipeline = PipelineBuilder.buildRequestPipeline(services);
+        RemoteInboundHandler inboundHandler = new RemoteInboundHandler(requestPipeline);
+        final MessageHandler handler = new MessageHandler(Collections.singletonList(protocol), inboundHandler);
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) {

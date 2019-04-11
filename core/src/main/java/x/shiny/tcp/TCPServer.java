@@ -37,12 +37,11 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import x.shiny.Protocol;
-import x.shiny.channel.InvocationPipeline;
-import x.shiny.channel.PipelineBuilder;
+import x.shiny.handler.PipelineBuilder;
 import x.shiny.handler.MessageHandler;
-import x.shiny.handler.PacketProcessor;
-import x.shiny.handler.ShinyPacketProcessor;
+import x.shiny.invocation.Pipeline;
 import x.shiny.protocol.ShinyProtocol;
+import x.shiny.transport.RemoteInboundHandler;
 import x.shiny.util.NetElf;
 
 /**
@@ -79,7 +78,9 @@ public class TCPServer {
             this.services = new ArrayList<>();
         }
         if (protocols == null) {
-            List<ShinyProtocol> defaultProtocol = Collections.singletonList(new ShinyProtocol());
+            ShinyProtocol protocol = new ShinyProtocol();
+            protocol.setServiceList(this.services);
+            List<ShinyProtocol> defaultProtocol = Collections.singletonList(protocol);
             this.protocols = Collections.unmodifiableList(defaultProtocol);
         } else {
             this.protocols = Collections.unmodifiableList(protocols);
@@ -105,10 +106,9 @@ public class TCPServer {
             bootstrap.channel(NioServerSocketChannel.class);
         }
 
-        InvocationPipeline requestPipeline = PipelineBuilder.buildRequestPipeline(services);
-        InvocationPipeline responsePipeline = PipelineBuilder.buildResponsePipeline();
-        PacketProcessor processor = new ShinyPacketProcessor(requestPipeline, responsePipeline);
-        final MessageHandler handler = new MessageHandler(protocols, processor);
+        Pipeline requestPipeline = PipelineBuilder.buildRequestPipeline(services);
+        RemoteInboundHandler inboundHandler = new RemoteInboundHandler(requestPipeline);
+        final MessageHandler handler = new MessageHandler(protocols, inboundHandler);
         ChannelInitializer<SocketChannel> initializer = new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) {

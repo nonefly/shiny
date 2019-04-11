@@ -18,7 +18,9 @@ package x.shiny.channel;
 
 import io.netty.channel.Channel;
 import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.Promise;
 import x.shiny.Protocol;
+import x.shiny.Response;
 
 /**
  * @author guohaoice@gmail.com
@@ -31,4 +33,8 @@ public interface Session {
     void setPreferredProtocol(Protocol protocol);
 
     Channel channel();
+
+    int id(Promise<Response> promise);
+
+    Promise<Response> promise(int id);
 }

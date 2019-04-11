@@ -16,19 +16,50 @@
 
 package x.shiny.example;
 
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import com.google.protobuf.Message;
+import lombok.extern.slf4j.Slf4j;
 import x.shiny.Endpoint;
+import x.shiny.Request;
+import x.shiny.Response;
 import x.shiny.common.DefaultEndpoint;
+import x.shiny.example.proto.EchoRequest;
+import x.shiny.example.proto.EchoResponse;
 import x.shiny.tcp.TCPClient;
 
 /**
  * @author guohaoice@gmail.com
  */
+@Slf4j
 public class DummyClient {
-    public static void main(String[] args) {
-        Endpoint endpoint=new DefaultEndpoint("localhost",8888);
+    public static void main(String[] args) throws ExecutionException, InterruptedException {
+        Endpoint endpoint = new DefaultEndpoint("localhost", 8888);
 
-        TCPClient client=new TCPClient(endpoint);
+        TCPClient client = new TCPClient(endpoint);
 
         client.connect();
+
+        Request request = new Request() {
+            @Override
+            public String service() {
+                return "x.shiny.example.proto.EchoService";
+            }
+
+            @Override
+            public String method() {
+                return "echo";
+            }
+
+            @Override
+            public Message arg() {
+                return EchoRequest.newBuilder().setName("haha").build();
+            }
+        };
+        Future<Response> future = client.invoke(request);
+        EchoResponse response = (EchoResponse) future.get().bizResponse();
+        if (log.isInfoEnabled()) {
+            log.info("Response:{}", response.getName());
+        }
     }
 }

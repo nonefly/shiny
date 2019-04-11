@@ -14,16 +14,17 @@
  * limitations under the License.
  */
 
-package x.shiny.handler;
+package x.shiny.invocation;
 
-import x.shiny.Packet;
-import x.shiny.channel.Session;
+import io.netty.util.concurrent.Future;
+import x.shiny.Request;
+import x.shiny.Response;
 
 /**
  * @author guohaoice@gmail.com
  */
-public interface PacketProcessor {
+public interface InvocationHandler {
 
-    void process(Session session, Packet packet);
+    Future<Response> invoke(Pipeline pipeline, Request request);
 
 }

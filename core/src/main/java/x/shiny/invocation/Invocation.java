@@ -14,26 +14,10 @@
  * limitations under the License.
  */
 
-package x.shiny.filter.outbound;
-
-import io.netty.channel.Channel;
-import io.netty.util.concurrent.Future;
-import x.shiny.Request;
-import x.shiny.Response;
-import x.shiny.channel.InvocationContext;
-import x.shiny.filter.Filter;
+package x.shiny.invocation;
 
 /**
  * @author guohaoice@gmail.com
  */
-public class OutboundRemoteHandler implements Filter {
-    @Override
-    public Future<Response> invoke(InvocationContext context, Request request) {
-        Channel channel = context.session().channel();
-        Future<Response> invoke = context.invoke(request)
-                .addListener(future -> {
-                    channel.write(future.get());
-                });
-        return invoke;
-    }
+public interface Invocation {
 }

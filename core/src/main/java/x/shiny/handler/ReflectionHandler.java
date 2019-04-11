@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package x.shiny.filter;
+package x.shiny.handler;
 
 import java.util.List;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
 import com.google.protobuf.RpcCallback;
-import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
@@ -28,30 +27,30 @@ import io.netty.util.concurrent.Promise;
 import lombok.AllArgsConstructor;
 import x.shiny.Request;
 import x.shiny.Response;
-import x.shiny.channel.InvocationContext;
+import x.shiny.invocation.InvocationHandler;
+import x.shiny.invocation.Pipeline;
 
 /**
  * @author guohaoice@gmail.com
  */
 @AllArgsConstructor
-public class ReflectionHandler implements Filter {
+public class ReflectionHandler implements InvocationHandler {
     private final List<Service> services;
 
     @Override
-    public Future<Response> invoke(InvocationContext context, Request request) {
+    public Future<Response> invoke(Pipeline context, Request request) {
         for (Service service : services) {
             Descriptors.ServiceDescriptor descriptor = service.getDescriptorForType();
             if (!descriptor.getName().equals(request.service())) {
                 continue;
             }
             Descriptors.MethodDescriptor methodDescriptor = descriptor.findMethodByName(request.method());
-            RpcController controller = (RpcController) request.args()[0];
-            Message message = (Message) request.args()[1];
+            Message message = request.arg();
             Promise<Response> responsePromise = GlobalEventExecutor.INSTANCE.newPromise();
-            RpcCallback callback = o -> {
+            RpcCallback<Message> callback = o -> {
                 Response response = new Response() {
                     @Override
-                    public Object bizResponse() {
+                    public Message bizResponse() {
                         return o;
                     }
 
@@ -68,7 +67,7 @@ public class ReflectionHandler implements Filter {
                 responsePromise.setSuccess(response);
 
             };
-            service.callMethod(methodDescriptor, controller, message, callback);
+            service.callMethod(methodDescriptor, null, message, callback);
             return responsePromise;
         }
         throw new IllegalStateException("No service found for request:" + request);

@@ -20,9 +20,15 @@ package x.shiny;
  * @author guohaoice@gmail.com
  */
 public interface Packet {
+    int id();
+
+    String method();
+
+    String service();
+
     boolean isRequest();
 
-    int id();
+    Protocol protocol();
 
     Request request();
 

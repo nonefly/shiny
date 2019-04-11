@@ -14,27 +14,37 @@
  * limitations under the License.
  */
 
-package x.shiny.channel;
+package x.shiny.handler;
 
 import java.util.List;
 import com.google.protobuf.Service;
-import x.shiny.filter.ReflectionHandler;
-import x.shiny.filter.inbound.RemoteHandler;
-import x.shiny.filter.outbound.OutboundRemoteHandler;
+import io.netty.util.concurrent.Future;
+import lombok.AllArgsConstructor;
+import x.shiny.Request;
+import x.shiny.Response;
+import x.shiny.handler.ReflectionHandler;
+import x.shiny.invocation.InvocationHandler;
+import x.shiny.invocation.Pipeline;
 
 /**
  * @author guohaoice@gmail.com
  */
 public class PipelineBuilder {
-    public static InvocationPipeline buildRequestPipeline(List<Service> services) {
+    public static Pipeline buildRequestPipeline(List<Service> services) {
         ReflectionHandler handler = new ReflectionHandler(services);
-        InvocationPipeline current = new ShinyInvocationPipeline(null, handler);
-        current = new ShinyInvocationPipeline(current, new OutboundRemoteHandler());
+        PipelineNode node = new PipelineNode(handler, null);
+        return node;
     }
 
-    public static InvocationPipeline buildResponsePipeline() {
-        InvocationPipeline tail = new ShinyInvocationPipeline(null, new RemoteHandler());
+    @AllArgsConstructor
+    private static final class PipelineNode implements Pipeline {
+        private final InvocationHandler handler;
+        private final PipelineNode next;
 
-        return tail;
+
+        @Override
+        public Future<Response> invoke(Request request) {
+            return handler.invoke(next, request);
+        }
     }
 }
