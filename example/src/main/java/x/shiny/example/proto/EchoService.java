@@ -12,7 +12,7 @@ public  abstract class EchoService
 
   public interface Interface {
     /**
-     * <code>rpc Echo(.x.shiny.example.proto.EchoRequest) returns (.x.shiny.example.proto.EchoResponse);</code>
+     * <code>rpc echo(.x.shiny.example.proto.EchoRequest) returns (.x.shiny.example.proto.EchoResponse);</code>
      */
     public abstract void echo(
         com.google.protobuf.RpcController controller,
@@ -97,7 +97,7 @@ public  abstract class EchoService
   }
 
   /**
-   * <code>rpc Echo(.x.shiny.example.proto.EchoRequest) returns (.x.shiny.example.proto.EchoResponse);</code>
+   * <code>rpc echo(.x.shiny.example.proto.EchoRequest) returns (.x.shiny.example.proto.EchoResponse);</code>
    */
   public abstract void echo(
       com.google.protobuf.RpcController controller,

@@ -14,81 +14,86 @@
  * limitations under the License.
  */
 
-package x.shiny.transport;
+package x.shiny.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
+import io.netty.util.Attribute;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.Promise;
 import lombok.AllArgsConstructor;
 import x.shiny.Packet;
 import x.shiny.Protocol;
 import x.shiny.Request;
 import x.shiny.Response;
 import x.shiny.channel.Session;
-import x.shiny.invocation.Pipeline;
+import x.shiny.channel.ShinySession;
+import x.shiny.tcp.TCPClient;
 
 /**
  * @author guohaoice@gmail.com
  */
 @AllArgsConstructor
-public class RemoteInboundHandler {
-    private final Pipeline pipeline;
+public class RemoteOutboundHandler {
+    private final TCPClient client;
 
-    public void handle(Session session, Packet packet) {
-        Channel channel = session.channel();
-        if (packet.isRequest()) {
-            Future<Response> f = pipeline.invoke(packet.request());
-            f.addListener(future -> {
-                Response response = (Response) future.get();
-                ByteBuf message = packet.protocol()
-                        .unpack(new ResponsePacket(response, packet));
-                channel.write(message);
-            });
+    public Future<Response> invoke(Request request) {
+        Channel channel = client.getChannel();
+        Session session;
+        if (channel.hasAttr(Session.SESSION_ATTRIBUTE_KEY)) {
+            session = channel.attr(Session.SESSION_ATTRIBUTE_KEY).get();
         } else {
-            session.promise(packet.id())
-                    .setSuccess(packet.response());
+            channel.attr(Session.SESSION_ATTRIBUTE_KEY)
+                    .setIfAbsent(new ShinySession(channel, client.getProtocol()));
+            session= channel.attr(Session.SESSION_ATTRIBUTE_KEY).get();
         }
+        Promise<Response> promise = channel.eventLoop().newPromise();
+        Packet packet = new RequestPacket(session.id(promise), request, session.preferredProtocol());
+        ByteBuf message = session.preferredProtocol().unpack(packet);
+        channel.writeAndFlush(message);
+        return promise;
     }
 
     @AllArgsConstructor
-    private final class ResponsePacket implements Packet {
-        private final Response response;
-        private final Packet requestPacket;
+    private final class RequestPacket implements Packet {
+        private final int id;
+        private final Request request;
+        private final Protocol protocol;
+
 
         @Override
         public int id() {
-            return requestPacket.id();
+            return id;
         }
 
         @Override
         public String method() {
-            return requestPacket.method();
+            return request.method();
         }
 
         @Override
         public String service() {
-            return requestPacket.method();
+            return request.service();
         }
 
         @Override
         public boolean isRequest() {
-            return false;
+            return true;
         }
 
         @Override
         public Protocol protocol() {
-            return requestPacket.protocol();
+            return protocol;
         }
 
         @Override
         public Request request() {
-            return requestPacket.request();
+            return request;
         }
 
         @Override
         public Response response() {
-            return response;
+            return null;
         }
     }
-
 }

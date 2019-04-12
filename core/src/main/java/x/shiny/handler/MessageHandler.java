@@ -21,7 +21,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.CombinedChannelDuplexHandler;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.Attribute;
 import lombok.AllArgsConstructor;
@@ -31,7 +30,6 @@ import x.shiny.Protocol;
 import x.shiny.channel.Session;
 import x.shiny.channel.ShinySession;
 import x.shiny.common.BadDataFormatException;
-import x.shiny.transport.RemoteInboundHandler;
 
 /**
  * Bi-direction is supported, so there is no different handlers between server and client.

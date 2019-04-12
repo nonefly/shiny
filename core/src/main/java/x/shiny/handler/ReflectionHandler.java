@@ -41,7 +41,7 @@ public class ReflectionHandler implements InvocationHandler {
     public Future<Response> invoke(Pipeline context, Request request) {
         for (Service service : services) {
             Descriptors.ServiceDescriptor descriptor = service.getDescriptorForType();
-            if (!descriptor.getName().equals(request.service())) {
+            if (!descriptor.getFullName().equals(request.service())) {
                 continue;
             }
             Descriptors.MethodDescriptor methodDescriptor = descriptor.findMethodByName(request.method());

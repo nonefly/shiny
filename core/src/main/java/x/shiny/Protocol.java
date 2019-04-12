@@ -16,7 +16,6 @@
 
 package x.shiny;
 
-import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 
 /**

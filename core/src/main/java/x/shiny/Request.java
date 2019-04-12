@@ -30,4 +30,5 @@ public interface Request {
 
     Message arg();
 
+    Message responseType();
 }

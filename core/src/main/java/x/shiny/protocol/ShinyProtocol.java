@@ -17,6 +17,8 @@
 package x.shiny.protocol;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
@@ -24,6 +26,8 @@ import com.google.protobuf.Service;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.util.CharsetUtil;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import x.shiny.Packet;
 import x.shiny.Protocol;
@@ -43,6 +47,7 @@ public class ShinyProtocol implements Protocol {
     private static final byte[] MAGIC_HEADER = "BABE".getBytes(CharsetUtil.UTF_8);
     private static final int HEADER_LEN = 16;
     private List<Service> serviceList;
+    private ConcurrentMap<String, ProtoTypePair> typePairs = new ConcurrentHashMap<>();
 
     @Override
     public int id() {
@@ -72,13 +77,24 @@ public class ShinyProtocol implements Protocol {
         int methodLen = buf.readInt();
         byte[] method = new byte[methodLen];
         buf.readBytes(method);
-        String methodName = new String(service, CharsetUtil.UTF_8);
+        String methodName = new String(method, CharsetUtil.UTF_8);
 
         byte[] body = new byte[len - serviceNameLen - methodLen];
         buf.readBytes(body);
         Message message;
+        Message responseType;
         try {
-            message = getProtoType(serviceName, methodName, isRequest).toProto().getParserForType().parseFrom(body);
+            if (!isRequest) {
+                ProtoTypePair pair = typePairs.get(serviceName + "#" + methodName);
+                message = pair.response.getParserForType().parseFrom(body);
+                responseType = pair.response;
+            } else {
+                message = getProtoType(serviceName, methodName, isRequest)
+                        .getParserForType()
+                        .parseFrom(body);
+                responseType = getProtoType(serviceName, methodName, false);
+
+            }
         } catch (InvalidProtocolBufferException e) {
             log.warn("Bad request format", e);
             return null;
@@ -130,6 +146,11 @@ public class ShinyProtocol implements Protocol {
                         public Message arg() {
                             return message;
                         }
+
+                        @Override
+                        public Message responseType() {
+                            return responseType;
+                        }
                     };
                 }
             }
@@ -164,6 +185,13 @@ public class ShinyProtocol implements Protocol {
 
     @Override
     public ByteBuf unpack(Packet packet) {
+        if (packet.isRequest()) {
+            Request request = packet.request();
+            String key = request.service() + "#" + request.method();
+            if (!typePairs.containsKey(key)) {
+                typePairs.putIfAbsent(key, new ProtoTypePair(request.arg().getDefaultInstanceForType(), request.responseType()));
+            }
+        }
         ByteBuf buf = Unpooled.buffer();
         buf.writeBytes(MAGIC_HEADER);
         buf.writeInt(packet.id());
@@ -185,13 +213,28 @@ public class ShinyProtocol implements Protocol {
         this.serviceList = serviceList;
     }
 
-    private Descriptors.Descriptor getProtoType(String serviceName, String methodName, boolean isRequest) throws InvalidProtocolBufferException {
+    private Message getProtoType(String serviceName, String methodName, boolean isRequest) throws InvalidProtocolBufferException {
+        if (serviceList == null) {
+            throw new InvalidProtocolBufferException(serviceName + " " + methodName);
+        }
         for (Service service : serviceList) {
-            if (service.getDescriptorForType().getName().equals(serviceName)) {
-                Descriptors.MethodDescriptor descriptor = service.getDescriptorForType().findMethodByName(methodName);
-                return isRequest ? descriptor.getInputType() : descriptor.getOutputType();
+            String currService = service.getDescriptorForType().getFullName();
+            if (currService.equals(serviceName)) {
+                List<Descriptors.MethodDescriptor> methods = service.getDescriptorForType().getMethods();
+                for (Descriptors.MethodDescriptor method : methods) {
+                    if (method.getName().equals(methodName)) {
+                        return isRequest ? service.getRequestPrototype(method) : service.getResponsePrototype(method);
+                    }
+                }
             }
         }
         throw new InvalidProtocolBufferException(serviceName + " " + methodName);
+    }
+
+    @Data
+    @AllArgsConstructor
+    private static final class ProtoTypePair {
+        final Message request;
+        final Message response;
     }
 }

@@ -18,7 +18,11 @@ package x.shiny.tcp;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.Future;
+import com.google.protobuf.Descriptors;
+import com.google.protobuf.Message;
+import com.google.protobuf.RpcCallback;
+import com.google.protobuf.RpcChannel;
+import com.google.protobuf.RpcController;
 import com.google.protobuf.Service;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
@@ -30,8 +34,11 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.concurrent.Future;
 import lombok.Getter;
 import x.shiny.Endpoint;
 import x.shiny.Protocol;
@@ -39,15 +46,15 @@ import x.shiny.Request;
 import x.shiny.Response;
 import x.shiny.handler.MessageHandler;
 import x.shiny.handler.PipelineBuilder;
+import x.shiny.handler.RemoteInboundHandler;
+import x.shiny.handler.RemoteOutboundHandler;
 import x.shiny.invocation.Pipeline;
 import x.shiny.protocol.ShinyProtocol;
-import x.shiny.transport.RemoteInboundHandler;
-import x.shiny.transport.RemoteOutboundHandler;
 
 /**
  * @author guohaoice@gmail.com
  */
-public class TCPClient {
+public class TCPClient implements RpcChannel {
     private static final EventLoopGroup WORKER;
 
     static {
@@ -92,12 +99,7 @@ public class TCPClient {
         this.bootstrap = new Bootstrap();
     }
 
-    public Future<Response> invoke(Request request) {
-        return handler.invoke(request);
-    }
-
     public void connect() {
-
         if (Epoll.isAvailable()) {
             // WORKER thread may do some biz jobs , 50% ratio is rational.
             bootstrap.channel(EpollSocketChannel.class);
@@ -111,6 +113,7 @@ public class TCPClient {
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override
             protected void initChannel(SocketChannel ch) {
+                ch.pipeline().addLast(new LoggingHandler(LogLevel.TRACE));
                 ch.pipeline().addLast(new IdleStateHandler(30, 30, 30));
                 ch.pipeline().addLast(handler);
             }
@@ -121,5 +124,34 @@ public class TCPClient {
         this.channel = bootstrap.connect(endpoint.host(), endpoint.port())
                 .syncUninterruptibly()
                 .channel();
+    }
+
+    @Override
+    public void callMethod(Descriptors.MethodDescriptor method, RpcController controller, Message request, Message responsePrototype, RpcCallback<Message> done) {
+        Future<Response> f = handler.invoke(new Request() {
+            @Override
+            public String service() {
+                return method.getService().getFullName();
+            }
+
+            @Override
+            public String method() {
+                return method.getName();
+            }
+
+            @Override
+            public Message arg() {
+                return request;
+            }
+
+            @Override
+            public Message responseType() {
+                return responsePrototype;
+            }
+        });
+        f.addListener(future -> {
+            Response object = (Response) future.get();
+            done.run(object.bizResponse());
+        });
     }
 }

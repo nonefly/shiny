@@ -32,6 +32,8 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.Getter;
@@ -41,7 +43,7 @@ import x.shiny.handler.PipelineBuilder;
 import x.shiny.handler.MessageHandler;
 import x.shiny.invocation.Pipeline;
 import x.shiny.protocol.ShinyProtocol;
-import x.shiny.transport.RemoteInboundHandler;
+import x.shiny.handler.RemoteInboundHandler;
 import x.shiny.util.NetElf;
 
 /**
@@ -113,6 +115,7 @@ public class TCPServer {
             @Override
             protected void initChannel(SocketChannel ch) {
                 ChannelPipeline pipeline = ch.pipeline();
+                pipeline.addLast(new LoggingHandler(LogLevel.TRACE));
                 pipeline.addLast(new IdleStateHandler(60, 60, 60));
                 pipeline.addLast(handler);
             }

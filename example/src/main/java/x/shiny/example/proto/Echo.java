@@ -35,7 +35,7 @@ public final class Echo {
     java.lang.String[] descriptorData = {
       "\n\necho.proto\022\025x.shiny.example.proto\"\033\n\013E" +
       "choRequest\022\014\n\004name\030\001 \001(\t\"\034\n\014EchoResponse" +
-      "\022\014\n\004name\030\001 \001(\t2^\n\013EchoService\022O\n\004Echo\022\"." +
+      "\022\014\n\004name\030\001 \001(\t2^\n\013EchoService\022O\n\004echo\022\"." +
       "x.shiny.example.proto.EchoRequest\032#.x.sh" +
       "iny.example.proto.EchoResponseB\"\n\025x.shin" +
       "y.example.protoB\004EchoP\001\210\001\001b\006proto3"
