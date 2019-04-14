@@ -29,7 +29,7 @@ import x.shiny.Packet;
 import x.shiny.Protocol;
 import x.shiny.channel.Session;
 import x.shiny.channel.ShinySession;
-import x.shiny.common.BadDataFormatException;
+import x.shiny.common.RPCException;
 
 /**
  * Bi-direction is supported, so there is no different handlers between server and client.
@@ -89,7 +89,7 @@ public class MessageHandler extends ChannelInboundHandlerAdapter {
             }
         }
         if (protocol == null || packet == null) {
-            throw new BadDataFormatException();
+            throw RPCException.BAD_DATA_FORMAT;
         }
         if (session == null) {
             session = new ShinySession(ctx.channel(), protocol);

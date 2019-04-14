@@ -41,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 import x.shiny.Protocol;
 import x.shiny.handler.PipelineBuilder;
 import x.shiny.handler.MessageHandler;
-import x.shiny.invocation.Pipeline;
+import x.shiny.invocation.Filter;
 import x.shiny.protocol.ShinyProtocol;
 import x.shiny.handler.RemoteInboundHandler;
 import x.shiny.util.NetElf;
@@ -80,8 +80,7 @@ public class TCPServer {
             this.services = new ArrayList<>();
         }
         if (protocols == null) {
-            ShinyProtocol protocol = new ShinyProtocol();
-            protocol.setServiceList(this.services);
+            ShinyProtocol protocol = new ShinyProtocol(this.services);
             List<ShinyProtocol> defaultProtocol = Collections.singletonList(protocol);
             this.protocols = Collections.unmodifiableList(defaultProtocol);
         } else {
@@ -108,8 +107,8 @@ public class TCPServer {
             bootstrap.channel(NioServerSocketChannel.class);
         }
 
-        Pipeline requestPipeline = PipelineBuilder.buildRequestPipeline(services);
-        RemoteInboundHandler inboundHandler = new RemoteInboundHandler(requestPipeline);
+        Filter requestFilter = PipelineBuilder.buildRequestPipeline(services);
+        RemoteInboundHandler inboundHandler = new RemoteInboundHandler(requestFilter);
         final MessageHandler handler = new MessageHandler(protocols, inboundHandler);
         ChannelInitializer<SocketChannel> initializer = new ChannelInitializer<SocketChannel>() {
             @Override

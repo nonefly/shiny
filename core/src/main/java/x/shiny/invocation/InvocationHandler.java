@@ -25,6 +25,6 @@ import x.shiny.Response;
  */
 public interface InvocationHandler {
 
-    Future<Response> invoke(Pipeline pipeline, Request request);
+    Future<Response> invoke(Filter filter, Request request);
 
 }

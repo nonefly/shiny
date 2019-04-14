@@ -20,4 +20,7 @@ package x.shiny.common;
  * @author guohaoice@gmail.com
  */
 public class BadDataFormatException extends RPCException {
+    public BadDataFormatException(int code, String msg) {
+        super(code, msg);
+    }
 }

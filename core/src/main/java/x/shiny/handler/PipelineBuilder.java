@@ -22,23 +22,24 @@ import io.netty.util.concurrent.Future;
 import lombok.AllArgsConstructor;
 import x.shiny.Request;
 import x.shiny.Response;
+import x.shiny.invocation.Filter;
 import x.shiny.invocation.InvocationHandler;
-import x.shiny.invocation.Pipeline;
 
 /**
  * @author guohaoice@gmail.com
  */
 public class PipelineBuilder {
-    public static Pipeline buildRequestPipeline(List<Service> services) {
-        ReflectionHandler handler = new ReflectionHandler(services);
-        PipelineNode node = new PipelineNode(handler, null);
-        return node;
+    public static Filter buildRequestPipeline(List<Service> services) {
+        ReflectionHandler tail = new ReflectionHandler(services);
+//        FilterNode node = new FilterNode(, null);
+//        return node;
+        return tail;
     }
 
     @AllArgsConstructor
-    private static final class PipelineNode implements Pipeline {
+    private static final class FilterNode implements Filter {
         private final InvocationHandler handler;
-        private final PipelineNode next;
+        private final Filter next;
 
 
         @Override

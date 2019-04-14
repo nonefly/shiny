@@ -16,6 +16,7 @@
 
 package x.shiny.handler;
 
+import java.util.HashMap;
 import java.util.List;
 import com.google.protobuf.Descriptors;
 import com.google.protobuf.Message;
@@ -24,29 +25,37 @@ import com.google.protobuf.Service;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import io.netty.util.concurrent.Promise;
-import lombok.AllArgsConstructor;
 import x.shiny.Request;
 import x.shiny.Response;
-import x.shiny.invocation.InvocationHandler;
-import x.shiny.invocation.Pipeline;
+import x.shiny.common.RPCException;
+import x.shiny.invocation.Filter;
 
 /**
  * @author guohaoice@gmail.com
  */
-@AllArgsConstructor
-public class ReflectionHandler implements InvocationHandler {
-    private final List<Service> services;
+public class ReflectionHandler implements Filter {
+
+
+    private final HashMap<String, Service> services;
+
+    public ReflectionHandler(List<Service> services) {
+        this.services = new HashMap<>();
+        if (services != null) {
+            for (Service service : services) {
+                this.services.put(service.getDescriptorForType().getFullName(), service);
+            }
+        }
+    }
 
     @Override
-    public Future<Response> invoke(Pipeline context, Request request) {
-        for (Service service : services) {
-            Descriptors.ServiceDescriptor descriptor = service.getDescriptorForType();
-            if (!descriptor.getFullName().equals(request.service())) {
-                continue;
-            }
-            Descriptors.MethodDescriptor methodDescriptor = descriptor.findMethodByName(request.method());
+    public Future<Response> invoke(Request request) {
+        Service service = services.get(request.service());
+        Promise<Response> responsePromise = GlobalEventExecutor.INSTANCE.newPromise();
+        if (service == null) {
+            responsePromise.setFailure(RPCException.NOT_FOUND_METHOD);
+        } else {
+            Descriptors.MethodDescriptor methodDescriptor = service.getDescriptorForType().findMethodByName(request.method());
             Message message = request.arg();
-            Promise<Response> responsePromise = GlobalEventExecutor.INSTANCE.newPromise();
             RpcCallback<Message> callback = o -> {
                 Response response = new Response() {
                     @Override
@@ -68,8 +77,7 @@ public class ReflectionHandler implements InvocationHandler {
 
             };
             service.callMethod(methodDescriptor, null, message, callback);
-            return responsePromise;
         }
-        throw new IllegalStateException("No service found for request:" + request);
+        return responsePromise;
     }
 }

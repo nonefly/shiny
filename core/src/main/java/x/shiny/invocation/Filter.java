@@ -23,7 +23,7 @@ import x.shiny.Response;
 /**
  * @author guohaoice@gmail.com
  */
-public interface Pipeline {
+public interface Filter {
 
     Future<Response> invoke(Request request);
 }

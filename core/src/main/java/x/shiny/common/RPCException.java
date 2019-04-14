@@ -16,8 +16,19 @@
 
 package x.shiny.common;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 /**
  * @author guohaoice@gmail.com
  */
+@EqualsAndHashCode(callSuper = true)
+@AllArgsConstructor
+@Data
 public class RPCException extends RuntimeException {
+    public static final RPCException BAD_DATA_FORMAT = new RPCException(403, "Bad data format");
+    public static final RPCException NOT_FOUND_METHOD = new RPCException(404, "Can not found method");
+    private final int code;
+    private final String msg;
 }

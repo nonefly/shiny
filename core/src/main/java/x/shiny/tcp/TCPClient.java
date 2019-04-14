@@ -48,7 +48,7 @@ import x.shiny.handler.MessageHandler;
 import x.shiny.handler.PipelineBuilder;
 import x.shiny.handler.RemoteInboundHandler;
 import x.shiny.handler.RemoteOutboundHandler;
-import x.shiny.invocation.Pipeline;
+import x.shiny.invocation.Filter;
 import x.shiny.protocol.ShinyProtocol;
 
 /**
@@ -89,9 +89,7 @@ public class TCPClient implements RpcChannel {
     public TCPClient(Endpoint endpoint, Protocol protocol, List<Service> services) {
         this.endpoint = endpoint;
         if (protocol == null) {
-            ShinyProtocol shinyProtocol = new ShinyProtocol();
-            shinyProtocol.setServiceList(services);
-            this.protocol = shinyProtocol;
+            this.protocol = new ShinyProtocol(services);
         } else {
             this.protocol = protocol;
         }
@@ -107,8 +105,8 @@ public class TCPClient implements RpcChannel {
             bootstrap.channel(NioSocketChannel.class);
         }
 
-        Pipeline requestPipeline = PipelineBuilder.buildRequestPipeline(services);
-        RemoteInboundHandler inboundHandler = new RemoteInboundHandler(requestPipeline);
+        Filter requestFilter = PipelineBuilder.buildRequestPipeline(services);
+        RemoteInboundHandler inboundHandler = new RemoteInboundHandler(requestFilter);
         final MessageHandler handler = new MessageHandler(Collections.singletonList(protocol), inboundHandler);
         bootstrap.handler(new ChannelInitializer<SocketChannel>() {
             @Override

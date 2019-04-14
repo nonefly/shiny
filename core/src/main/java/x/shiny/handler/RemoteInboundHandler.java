@@ -25,19 +25,19 @@ import x.shiny.Protocol;
 import x.shiny.Request;
 import x.shiny.Response;
 import x.shiny.channel.Session;
-import x.shiny.invocation.Pipeline;
+import x.shiny.invocation.Filter;
 
 /**
  * @author guohaoice@gmail.com
  */
 @AllArgsConstructor
 public class RemoteInboundHandler {
-    private final Pipeline pipeline;
+    private final Filter filter;
 
     public void handle(Session session, Packet packet) {
         Channel channel = session.channel();
         if (packet.isRequest()) {
-            Future<Response> f = pipeline.invoke(packet.request());
+            Future<Response> f = filter.invoke(packet.request());
             f.addListener(future -> {
                 Response response = (Response) future.get();
                 ByteBuf message = packet.protocol()

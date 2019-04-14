@@ -16,7 +16,9 @@
 
 package x.shiny.protocol;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import com.google.protobuf.Descriptors;
@@ -46,8 +48,25 @@ import x.shiny.Response;
 public class ShinyProtocol implements Protocol {
     private static final byte[] MAGIC_HEADER = "BABE".getBytes(CharsetUtil.UTF_8);
     private static final int HEADER_LEN = 16;
-    private List<Service> serviceList;
+
     private ConcurrentMap<String, ProtoTypePair> typePairs = new ConcurrentHashMap<>();
+
+    private Map<String, ProtoTypePair> serverProtoTypes = new HashMap<>();
+
+    public ShinyProtocol(List<Service> serviceList) {
+        if (serviceList != null) {
+            for (Service service : serviceList) {
+                String currService = service.getDescriptorForType().getFullName();
+                List<Descriptors.MethodDescriptor> methods = service.getDescriptorForType().getMethods();
+                for (Descriptors.MethodDescriptor method : methods) {
+                    Message requestPrototype = service.getRequestPrototype(method);
+                    Message responsePrototype = service.getResponsePrototype(method);
+                    ProtoTypePair typePair = new ProtoTypePair(requestPrototype, responsePrototype);
+                    serverProtoTypes.put(currService + "#" + method.getName(), typePair);
+                }
+            }
+        }
+    }
 
     @Override
     public int id() {
@@ -209,32 +228,19 @@ public class ShinyProtocol implements Protocol {
         return buf;
     }
 
-    public void setServiceList(List<Service> serviceList) {
-        this.serviceList = serviceList;
-    }
 
     private Message getProtoType(String serviceName, String methodName, boolean isRequest) throws InvalidProtocolBufferException {
-        if (serviceList == null) {
-            throw new InvalidProtocolBufferException(serviceName + " " + methodName);
+        ProtoTypePair typePair = serverProtoTypes.get(serviceName + "#" + methodName);
+        if (typePair == null) {
+            throw new InvalidProtocolBufferException("404");
         }
-        for (Service service : serviceList) {
-            String currService = service.getDescriptorForType().getFullName();
-            if (currService.equals(serviceName)) {
-                List<Descriptors.MethodDescriptor> methods = service.getDescriptorForType().getMethods();
-                for (Descriptors.MethodDescriptor method : methods) {
-                    if (method.getName().equals(methodName)) {
-                        return isRequest ? service.getRequestPrototype(method) : service.getResponsePrototype(method);
-                    }
-                }
-            }
-        }
-        throw new InvalidProtocolBufferException(serviceName + " " + methodName);
+        return isRequest ? typePair.getRequest() : typePair.getResponse();
     }
 
     @Data
     @AllArgsConstructor
     private static final class ProtoTypePair {
-        final Message request;
-        final Message response;
+        private final Message request;
+        private final Message response;
     }
 }
